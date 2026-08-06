@@ -1,0 +1,2 @@
+-keep class com.apptimemachine.app.data.local.entity.** { *; }
+-keepattributes *Annotation*
