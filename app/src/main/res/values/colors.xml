@@ -1,0 +1,7 @@
+<resources>
+    <!-- Only used by the pre-Compose window theme (themes.xml) — the app's
+         real Material 3 palette lives in ui/theme/Color.kt and is driven
+         entirely from Compose, including Android 12+ dynamic color. -->
+    <color name="window_background">#FFFBFE</color>
+    <color name="ic_launcher_background">#1B1B1F</color>
+</resources>

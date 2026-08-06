@@ -1,0 +1,15 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--
+        This is the window/system theme applied before Compose takes over
+        (status bar, splash background, etc.). Actual Material 3 theming —
+        including Android 12+ dynamic color — is handled entirely in Compose
+        by AppTimeMachineTheme (ui/theme/Theme.kt). Keep this XML theme
+        minimal; it exists only because AndroidManifest.xml/activities need
+        a real android:theme reference to resolve.
+    -->
+    <style name="Theme.AppTimeMachine" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:statusBarColor" tools:targetApi="21">@color/window_background</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
+    </style>
+</resources>
