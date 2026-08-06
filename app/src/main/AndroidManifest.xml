@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tool="http://schemas.android.com/tools">
+
+    <!-- Required to enumerate other installed apps' metadata (Play Store requires
+         a declared, justified use-case for QUERY_ALL_PACKAGES on API 30+). -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+        tool:node="replace" />
+
+    <!-- Foreground/background usage + battery + data per app. User must grant
+         this manually via Settings > Usage Access; no runtime dialog exists. -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+        tool:ignore="ProtectedPermissions" />
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <application
+        android:name=".AppTimeMachineApplication"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.AppTimeMachine"
+        android:supportsRtl="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.AppTimeMachine">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Fires immediately on install/update/uninstall so a MONITORING_STARTED
+             or VERSION_UPDATED event is written without waiting for the next
+             periodic scan. Only apps present WHILE this receiver (or a periodic
+             scan) is alive ever get a monitoringStartedAt — see InstalledAppEntity. -->
+        <receiver
+            android:name=".data.worker.PackageChangeReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.PACKAGE_ADDED" />
+                <action android:name="android.intent.action.PACKAGE_REMOVED" />
+                <action android:name="android.intent.action.PACKAGE_REPLACED" />
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+</manifest>
