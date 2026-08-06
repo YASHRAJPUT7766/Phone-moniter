@@ -41,17 +41,45 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Decode debug keystore (optional)
-        if: ${{ vars.BUILD_TYPE == 'release' || github.event.inputs.build_type == 'release' }}
+      - name: Generate keystore if none exists yet (one-time)
+        if: ${{ github.event.inputs.build_type == 'release' }}
         env:
           KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
         run: |
           if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Existing keystore secret found — using it."
             echo "$KEYSTORE_BASE64" | base64 -d > release.keystore
             echo "KEYSTORE_PATH=$(pwd)/release.keystore" >> "$GITHUB_ENV"
           else
-            echo "No release keystore secret configured; release build will be unsigned."
+            echo "No keystore secret found yet — generating a NEW one now."
+            echo "This only happens once. After this run, download the"
+            echo "'signing-key-SAVE-ME' artifact, follow the README steps to"
+            echo "add it as secrets, and future runs will reuse the same key."
+            keytool -genkey -v \
+              -keystore release.keystore \
+              -alias apptimemachine \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "apptimemachine123" \
+              -keypass "apptimemachine123" \
+              -dname "CN=AppTimeMachine, OU=Dev, O=AppTimeMachine, L=City, S=State, C=IN"
+            echo "KEYSTORE_PATH=$(pwd)/release.keystore" >> "$GITHUB_ENV"
+            mkdir -p key-output
+            base64 -w0 release.keystore > key-output/keystore_base64.txt
+            {
+              echo "RELEASE_KEYSTORE_BASE64  = (contents of keystore_base64.txt)"
+              echo "RELEASE_KEYSTORE_PASSWORD = apptimemachine123"
+              echo "RELEASE_KEY_ALIAS         = apptimemachine"
+              echo "RELEASE_KEY_PASSWORD      = apptimemachine123"
+            } > key-output/README_ADD_THESE_AS_SECRETS.txt
           fi
+
+      - name: Upload generated signing key (only on first run)
+        if: ${{ github.event.inputs.build_type == 'release' && hashFiles('key-output/*') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: signing-key-SAVE-ME
+          path: key-output/*
+          retention-days: 90
 
       - name: Assemble debug APK
         if: ${{ github.event.inputs.build_type != 'release' }}
@@ -60,11 +88,11 @@ jobs:
       - name: Assemble release APK
         if: ${{ github.event.inputs.build_type == 'release' }}
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        # KEYSTORE_PATH itself is exported to $GITHUB_ENV by the decode step above
-        # (only when the secret is present), so it's already in scope here.
+          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD || 'apptimemachine123' }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS || 'apptimemachine' }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD || 'apptimemachine123' }}
+        # KEYSTORE_PATH is exported to $GITHUB_ENV by the step above, whether the
+        # key came from an existing secret or was just freshly generated.
         run: gradle assembleRelease --no-daemon --stacktrace
 
       - name: Locate build outputs
