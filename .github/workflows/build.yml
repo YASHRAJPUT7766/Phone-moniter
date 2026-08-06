@@ -31,12 +31,15 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      # This action provisions Gradle itself (per gradle/wrapper/gradle-wrapper.properties)
-      # and caches dependencies, so the build works without a committed gradlew jar.
+      # Explicit version, NOT "wrapper" — this repo doesn't commit a gradlew
+      # binary, so "wrapper" mode has no file to read and falls back to the
+      # latest Gradle (9.x), which is incompatible with Kotlin Gradle plugin
+      # 1.9.24 declared in build.gradle.kts (NoSuchMethodError on
+      # Configuration.fileCollection). Pinning 8.9 here keeps it compatible.
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: wrapper
+          gradle-version: "8.9"
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
